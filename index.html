@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>◤ CYBER_STOCK_MONITOR ◢</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+<div class="vignette"></div>
+
+<!-- 指標 hover tooltip (全域單一實例) -->
+<div id="ind-tooltip" class="ind-tooltip" hidden></div>
+
+<div class="app">
+
+  <!-- ============ HEADER ============ -->
+  <header class="topbar">
+    <div class="logo">
+      <span class="brand-l">◤</span>
+      <span class="brand-name">CYBER<span class="brand-accent">_</span>STOCK<span class="brand-accent">_</span>MONITOR</span>
+      <span class="brand-r">◢</span>
+      <span class="brand-ver">v1.0</span>
+    </div>
+    <div class="clocks">
+      <div class="clock"><span class="clock-lbl">TPE</span><span id="clock-tpe">--:--:--</span></div>
+      <div class="clock"><span class="clock-lbl">NYC</span><span id="clock-nyc">--:--:--</span></div>
+      <div class="clock"><span class="clock-lbl">UTC</span><span id="clock-utc">--:--:--</span></div>
+    </div>
+    <div class="topbar-actions">
+      <button id="btn-settings" class="btn-icon" title="設定 / API Keys">⚙</button>
+      <button id="btn-fullscreen" class="btn-icon" title="全螢幕">⛶</button>
+    </div>
+  </header>
+
+  <!-- ============ 四市場面板 ============ -->
+  <section class="markets">
+    <article class="panel market-panel" data-market="tw-main">
+      <header class="panel-h">
+        <span class="panel-tag">TW.MAIN</span>
+        <span class="panel-title">台股大盤</span>
+        <span class="led" data-status="closed"></span>
+        <span class="panel-state">--</span>
+      </header>
+      <div class="panel-body">
+        <div class="sym-line"><span class="sym-code">TAIEX</span><span class="sym-name">加權指數</span></div>
+        <div class="price-big" data-field="price">----.--</div>
+        <div class="change-line">
+          <span class="arrow" data-field="arrow">·</span>
+          <span class="change-abs" data-field="changeAbs">--</span>
+          <span class="change-pct" data-field="changePct">--%</span>
+        </div>
+        <div class="ohlc">
+          <span>O <b data-field="open">--</b></span>
+          <span>H <b data-field="high">--</b></span>
+          <span>L <b data-field="low">--</b></span>
+          <span>PREV <b data-field="prev">--</b></span>
+        </div>
+        <canvas class="sparkline" data-spark="tw-main" width="320" height="48"></canvas>
+        <div class="panel-meta">
+          <span>last: <b data-field="time">--:--:--</b></span>
+          <span class="stale-tag" data-field="stale" hidden>STALE</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel market-panel" data-market="tw-night">
+      <header class="panel-h">
+        <span class="panel-tag">TW.NIGHT</span>
+        <span class="panel-title">台指期 (夜盤)</span>
+        <span class="led" data-status="closed"></span>
+        <span class="panel-state">--</span>
+      </header>
+      <div class="panel-body">
+        <div class="sym-line"><span class="sym-code" data-field="contract">TX-----</span><span class="sym-name">台指近月</span></div>
+        <div class="price-big" data-field="price">----.--</div>
+        <div class="change-line">
+          <span class="arrow" data-field="arrow">·</span>
+          <span class="change-abs" data-field="changeAbs">--</span>
+          <span class="change-pct" data-field="changePct">--%</span>
+        </div>
+        <div class="ohlc">
+          <span>O <b data-field="open">--</b></span>
+          <span>H <b data-field="high">--</b></span>
+          <span>L <b data-field="low">--</b></span>
+          <span>PREV <b data-field="prev">--</b></span>
+        </div>
+        <canvas class="sparkline" data-spark="tw-night" width="320" height="48"></canvas>
+        <div class="panel-session">夜盤交易時段: 15:00 — 05:00 (隔日)</div>
+        <div class="panel-meta">
+          <span>last: <b data-field="time">--:--:--</b></span>
+          <span class="stale-tag" data-field="stale" hidden>STALE</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel market-panel" data-market="us-main">
+      <header class="panel-h">
+        <span class="panel-tag">US.MAIN</span>
+        <span class="panel-title">美股大盤</span>
+        <span class="led" data-status="closed"></span>
+        <span class="panel-state">--</span>
+      </header>
+      <div class="panel-body multi">
+        <div class="row" data-sym="^GSPC">
+          <span class="row-name">S&amp;P 500</span>
+          <span class="row-price" data-field="price">----.--</span>
+          <span class="row-pct" data-field="changePct">--%</span>
+        </div>
+        <div class="row" data-sym="^IXIC">
+          <span class="row-name">NASDAQ</span>
+          <span class="row-price" data-field="price">----.--</span>
+          <span class="row-pct" data-field="changePct">--%</span>
+        </div>
+        <div class="row" data-sym="^DJI">
+          <span class="row-name">DOW JONES</span>
+          <span class="row-price" data-field="price">----.--</span>
+          <span class="row-pct" data-field="changePct">--%</span>
+        </div>
+        <canvas class="sparkline" data-spark="us-main" width="320" height="40"></canvas>
+        <div class="panel-meta">
+          <span>last: <b data-field="time">--:--:--</b></span>
+          <span class="stale-tag" data-field="stale" hidden>STALE</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel market-panel" data-market="us-night">
+      <header class="panel-h">
+        <span class="panel-tag">US.NIGHT</span>
+        <span class="panel-title">美股夜盤 (期貨)</span>
+        <span class="led" data-status="closed"></span>
+        <span class="panel-state">--</span>
+      </header>
+      <div class="panel-body multi">
+        <div class="row" data-sym="ES=F">
+          <span class="row-name">ES (S&amp;P FUT)</span>
+          <span class="row-price" data-field="price">----.--</span>
+          <span class="row-pct" data-field="changePct">--%</span>
+        </div>
+        <div class="row" data-sym="NQ=F">
+          <span class="row-name">NQ (NDX FUT)</span>
+          <span class="row-price" data-field="price">----.--</span>
+          <span class="row-pct" data-field="changePct">--%</span>
+        </div>
+        <div class="row" data-sym="YM=F">
+          <span class="row-name">YM (DJI FUT)</span>
+          <span class="row-price" data-field="price">----.--</span>
+          <span class="row-pct" data-field="changePct">--%</span>
+        </div>
+        <canvas class="sparkline" data-spark="us-night" width="320" height="40"></canvas>
+        <div class="panel-meta">
+          <span>last: <b data-field="time">--:--:--</b></span>
+          <span class="stale-tag" data-field="stale" hidden>STALE</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ 全球觀察指標 ============ -->
+  <section class="indicators">
+    <article class="panel indicators-panel">
+      <header class="panel-h">
+        <span class="panel-tag">INDICATORS</span>
+        <span class="panel-title">全球觀察指標</span>
+        <span class="panel-state" id="indicators-state">商品 · 匯率 · 加密貨幣</span>
+      </header>
+      <div class="panel-body">
+        <div class="indicator-grid">
+          <div class="indicator-group">
+            <div class="group-title">🥇 貴金屬</div>
+            <div class="ind-row" data-sym="GC=F">
+              <span class="ind-name">黃金</span>
+              <span class="ind-symbol">GC</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row" data-sym="SI=F">
+              <span class="ind-name">白銀</span>
+              <span class="ind-symbol">SI</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+          </div>
+
+          <div class="indicator-group">
+            <div class="group-title">🛢️ 能源</div>
+            <div class="ind-row" data-sym="CL=F">
+              <span class="ind-name">原油 (WTI)</span>
+              <span class="ind-symbol">CL</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row" data-sym="NG=F">
+              <span class="ind-name">天然氣</span>
+              <span class="ind-symbol">NG</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+          </div>
+
+          <div class="indicator-group">
+            <div class="group-title">₿ 加密貨幣</div>
+            <div class="ind-row" data-sym="BTC-USD">
+              <span class="ind-name">比特幣</span>
+              <span class="ind-symbol">BTC</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row" data-sym="ETH-USD">
+              <span class="ind-name">以太幣</span>
+              <span class="ind-symbol">ETH</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+          </div>
+
+          <div class="indicator-group">
+            <div class="group-title">⚖️ 避險 / 利率</div>
+            <div class="ind-row" data-sym="DX-Y.NYB">
+              <span class="ind-name">美元指數</span>
+              <span class="ind-symbol">DXY</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row" data-sym="^VIX">
+              <span class="ind-name">VIX 恐慌</span>
+              <span class="ind-symbol">VIX</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- 龍頭股: TW / US 切換 -->
+    <article class="panel indicators-panel">
+      <header class="panel-h">
+        <span class="panel-tag">MEGACAPS</span>
+        <span class="panel-title">龍頭股指標</span>
+        <div class="mega-tabs">
+          <button class="mega-tab" data-tab="tw" type="button">🇹🇼 台股龍頭</button>
+          <button class="mega-tab" data-tab="us" type="button">🇺🇸 美股巨頭</button>
+          <button class="mega-tab mega-auto" data-tab="auto" type="button" title="自動依時間切換">⟳ 自動</button>
+          <span class="mega-auto-hint" id="mega-auto-hint">自動模式</span>
+        </div>
+      </header>
+      <div class="panel-body">
+        <!-- 台股龍頭 pane -->
+        <div class="indicator-grid mega-grid" data-pane="tw" hidden>
+          <div class="indicator-group mega-group">
+            <div class="group-title">🤖 半導體龍頭</div>
+            <div class="ind-row mega-row" data-sym="2330">
+              <span class="ind-name">台積電</span>
+              <span class="ind-symbol">2330</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="2454">
+              <span class="ind-name">聯發科</span>
+              <span class="ind-symbol">2454</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="3711">
+              <span class="ind-name">日月光投控</span>
+              <span class="ind-symbol">3711</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+          </div>
+
+          <div class="indicator-group mega-group">
+            <div class="group-title">🖥️ AI 伺服器 / 組裝</div>
+            <div class="ind-row mega-row" data-sym="2317">
+              <span class="ind-name">鴻海</span>
+              <span class="ind-symbol">2317</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="2382">
+              <span class="ind-name">廣達</span>
+              <span class="ind-symbol">2382</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="3231">
+              <span class="ind-name">緯創</span>
+              <span class="ind-symbol">3231</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+          </div>
+
+          <div class="indicator-group mega-group">
+            <div class="group-title">🏦 金融 / 傳產 / 航運</div>
+            <div class="ind-row mega-row" data-sym="2891">
+              <span class="ind-name">中信金</span>
+              <span class="ind-symbol">2891</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="2412">
+              <span class="ind-name">中華電</span>
+              <span class="ind-symbol">2412</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="2603">
+              <span class="ind-name">長榮</span>
+              <span class="ind-symbol">2603</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 美股巨頭 pane -->
+        <div class="indicator-grid mega-grid" data-pane="us" hidden>
+          <div class="indicator-group mega-group">
+            <div class="group-title">🤖 AI / 半導體</div>
+            <div class="ind-row mega-row" data-sym="NVDA">
+              <span class="ind-name">輝達</span>
+              <span class="ind-symbol">NVDA</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="AVGO">
+              <span class="ind-name">博通</span>
+              <span class="ind-symbol">AVGO</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="TSM">
+              <span class="ind-name">台積電 ADR</span>
+              <span class="ind-symbol">TSM</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+          </div>
+
+          <div class="indicator-group mega-group">
+            <div class="group-title">☁️ 雲端 / 軟體</div>
+            <div class="ind-row mega-row" data-sym="MSFT">
+              <span class="ind-name">微軟</span>
+              <span class="ind-symbol">MSFT</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="GOOGL">
+              <span class="ind-name">Alphabet</span>
+              <span class="ind-symbol">GOOGL</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="AMZN">
+              <span class="ind-name">亞馬遜</span>
+              <span class="ind-symbol">AMZN</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+          </div>
+
+          <div class="indicator-group mega-group">
+            <div class="group-title">📱 消費 / 平台</div>
+            <div class="ind-row mega-row" data-sym="AAPL">
+              <span class="ind-name">蘋果</span>
+              <span class="ind-symbol">AAPL</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="META">
+              <span class="ind-name">Meta</span>
+              <span class="ind-symbol">META</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+            <div class="ind-row mega-row" data-sym="TSLA">
+              <span class="ind-name">特斯拉</span>
+              <span class="ind-symbol">TSLA</span>
+              <span class="ind-price" data-field="price">--</span>
+              <span class="ind-pct" data-field="changePct">--%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ 自選股 (K 線卡片格) ============ -->
+  <section class="row-watchlist">
+    <article class="panel watchlist-panel">
+      <header class="panel-h">
+        <span class="panel-tag">WATCH</span>
+        <span class="panel-title">自選股 K 線</span>
+        <div class="watch-interval-tabs">
+          <button class="watch-int-tab" data-int="5m" type="button">5 分</button>
+          <button class="watch-int-tab" data-int="15m" type="button">15 分</button>
+          <button class="watch-int-tab" data-int="60m" type="button">小時</button>
+          <button class="watch-int-tab active" data-int="1d" type="button">日</button>
+          <button class="watch-int-tab" data-int="1wk" type="button">週</button>
+        </div>
+        <span class="panel-actions">
+          <button id="btn-add-watch" class="btn-mini">+ 加入</button>
+        </span>
+      </header>
+      <div class="panel-body">
+        <div id="watchlist-cards" class="watchlist-cards">
+          <div class="empty-row">尚無自選 — 點「+ 加入」新增 4 位數股票代號 (例: 2330)</div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ 持股 ============ -->
+  <section class="row-portfolio">
+    <article class="panel portfolio-panel">
+      <header class="panel-h">
+        <span class="panel-tag">PORTFOLIO</span>
+        <span class="panel-title">持股 / 成本管理</span>
+        <span class="panel-actions">
+          <button id="btn-add-holding" class="btn-mini">+ 新增買入</button>
+          <button id="btn-export-csv" class="btn-mini">匯出 CSV</button>
+        </span>
+      </header>
+      <div class="panel-body">
+        <table class="holdings-table">
+          <thead>
+            <tr>
+              <th>代號</th>
+              <th>名稱</th>
+              <th class="num">股數</th>
+              <th class="num">均價</th>
+              <th class="num">現價</th>
+              <th class="num">市值</th>
+              <th class="num">損益</th>
+              <th class="num">損益%</th>
+              <th>走勢 (60D)</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="holdings-tbody">
+            <tr class="empty-row"><td colspan="10">尚無持股紀錄 — 點「+ 新增買入」開始</td></tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="5" class="total-lbl">總計</td>
+              <td class="num" id="total-market">0</td>
+              <td class="num" id="total-pnl">0</td>
+              <td class="num" id="total-pnl-pct">0.00%</td>
+              <td colspan="2"></td>
+            </tr>
+            <tr class="total-row sub">
+              <td colspan="5" class="total-lbl">總成本</td>
+              <td class="num" id="total-cost">0</td>
+              <td colspan="4"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- ============ 融資 / 質押 ============ -->
+  <section class="row-margin">
+    <article class="panel margin-panel">
+      <header class="panel-h">
+        <span class="panel-tag">MARGIN</span>
+        <span class="panel-title">融資 / 質押</span>
+        <span class="panel-actions">
+          <button id="btn-margin-settings" class="btn-mini">⚙ 設定</button>
+        </span>
+      </header>
+      <div class="panel-body margin-grid">
+        <div class="margin-block">
+          <div class="mb-title">融資</div>
+          <div class="mb-stat"><span>融資餘額</span><b id="m-balance">NT$ 0</b></div>
+          <div class="mb-stat"><span>利率</span><b id="m-rate">0.00%</b></div>
+          <div class="mb-stat"><span>今日利息</span><b id="m-daily-interest">NT$ 0</b></div>
+          <div class="mb-stat"><span>自備款</span><b id="m-equity">NT$ 0</b></div>
+        </div>
+        <div class="margin-block">
+          <div class="mb-title">維持率</div>
+          <div class="mb-big" id="m-ratio">--%</div>
+          <div class="mb-bar"><div class="mb-bar-fill" id="m-ratio-bar"></div><div class="mb-bar-mark" style="left:60%"></div></div>
+          <div class="mb-stat"><span>警戒線</span><b id="m-warn">130%</b></div>
+          <div class="mb-stat"><span>狀態</span><b id="m-status" class="status-ok">— —</b></div>
+        </div>
+        <div class="margin-block">
+          <div class="mb-title">質押</div>
+          <div class="mb-stat"><span>質押金額</span><b id="p-amount">NT$ 0</b></div>
+          <div class="mb-stat"><span>持股市值</span><b id="p-mv">NT$ 0</b></div>
+          <div class="mb-big" id="p-ratio">--%</div>
+          <div class="mb-bar"><div class="mb-bar-fill" id="p-ratio-bar"></div><div class="mb-bar-mark" style="left:60%"></div></div>
+          <div class="mb-stat"><span>狀態</span><b id="p-status" class="status-ok">— —</b></div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ AI 雙助手 ============ -->
+  <section class="row-ai">
+    <article class="panel ai-panel">
+      <header class="panel-h">
+        <span class="panel-tag">AI.TRIO</span>
+        <span class="panel-title">三方 AI 助手 — Claude × OpenAI × Gemini</span>
+        <span class="panel-actions">
+          <label class="toggle"><input type="checkbox" id="ai-include-ctx" checked> <span>自動附帶資料</span></label>
+          <label class="toggle"><input type="checkbox" id="ai-synthesize" checked> <span>🤝 統整三方結論</span></label>
+          <label class="toggle"><input type="checkbox" id="ai-websearch"> <span>🌐 即時上網查</span></label>
+          <button id="btn-ai-keys" class="btn-mini">⚙ API Keys</button>
+          <button id="btn-ai-clear" class="btn-mini">清除對話</button>
+        </span>
+      </header>
+      <div class="panel-body">
+        <div class="ai-input-row">
+          <textarea id="ai-input" placeholder="輸入問題 (例如: 我現在持股狀況如何? 該不該加碼 2330?)" rows="2"></textarea>
+          <button id="btn-ai-send" class="btn-send">送出 ▶</button>
+        </div>
+        <div class="ai-output-grid">
+          <div class="ai-col" data-provider="claude">
+            <div class="ai-col-h">
+              <label class="ai-col-toggle" title="啟用 / 停用 Claude">
+                <input type="checkbox" data-ai-enable="claude" checked>
+                <span class="ai-toggle-slider"></span>
+              </label>
+              <span class="ai-col-tag">◤ CLAUDE ◢</span>
+              <span class="ai-col-model" id="claude-model-label">claude-opus-4-7</span>
+              <span class="ai-col-status" id="claude-status">— 待命 —</span>
+            </div>
+            <div class="ai-col-body" id="claude-output"><div class="ai-empty">等待問題...</div></div>
+          </div>
+          <div class="ai-col" data-provider="openai">
+            <div class="ai-col-h">
+              <label class="ai-col-toggle" title="啟用 / 停用 OpenAI">
+                <input type="checkbox" data-ai-enable="openai" checked>
+                <span class="ai-toggle-slider"></span>
+              </label>
+              <span class="ai-col-tag">◤ OPENAI ◢</span>
+              <span class="ai-col-model" id="openai-model-label">gpt-4o</span>
+              <span class="ai-col-status" id="openai-status">— 待命 —</span>
+            </div>
+            <div class="ai-col-body" id="openai-output"><div class="ai-empty">等待問題...</div></div>
+          </div>
+          <div class="ai-col" data-provider="gemini">
+            <div class="ai-col-h">
+              <label class="ai-col-toggle" title="啟用 / 停用 Gemini">
+                <input type="checkbox" data-ai-enable="gemini" checked>
+                <span class="ai-toggle-slider"></span>
+              </label>
+              <span class="ai-col-tag">◤ GEMINI ◢</span>
+              <span class="ai-col-model" id="gemini-model-label">gemini-2.5-flash</span>
+              <span class="ai-col-status" id="gemini-status">— 待命 —</span>
+            </div>
+            <div class="ai-col-body" id="gemini-output"><div class="ai-empty">等待問題...</div></div>
+          </div>
+        </div>
+
+        <!-- 三方統整結論 -->
+        <div class="ai-conclusion" id="ai-conclusion" hidden>
+          <div class="conclusion-h">
+            <span class="conclusion-tag">◤ CONSENSUS ◢</span>
+            <span class="conclusion-title">三方統整結論</span>
+            <span class="conclusion-chair" id="conclusion-chair">主席: —</span>
+            <span class="conclusion-status" id="conclusion-status">— 待命 —</span>
+          </div>
+          <div class="conclusion-body" id="conclusion-output"></div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ 備忘錄 ============ -->
+  <section class="row-memo">
+    <article class="panel memo-panel">
+      <header class="panel-h">
+        <span class="panel-tag">MEMO</span>
+        <span class="panel-title">📝 備忘錄 / 觀察筆記</span>
+        <span class="memo-saved" id="memo-saved">未編輯</span>
+        <span class="panel-actions">
+          <button id="btn-memo-import" class="btn-mini" title="把目前 AI 結論搬到備忘錄">📋 引入結論</button>
+          <button id="btn-memo-markdown" class="btn-mini" title="切換預覽/編輯">👁 預覽</button>
+          <button id="btn-memo-export" class="btn-mini">💾 匯出</button>
+          <button id="btn-memo-clear" class="btn-mini">🗑 清空</button>
+        </span>
+      </header>
+      <div class="panel-body">
+        <textarea id="memo-input" class="memo-input" placeholder="這裡可以放你的觀察、目標價、進出場理由、新聞重點...&#10;&#10;支援 Markdown 語法:&#10;## 標題&#10;**粗體**&#10;- 列表項目&#10;&#10;按「📋 引入結論」會把目前 AI 結論一鍵附加進來。&#10;按「👁 預覽」切換成 Markdown 渲染檢視。"></textarea>
+        <div id="memo-preview" class="memo-preview" hidden></div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ 狀態列 ============ -->
+  <footer class="statusbar">
+    <span class="status-item">TWSE: <span class="status-led" id="led-twse" data-status="idle"></span><span id="status-twse">idle</span></span>
+    <span class="status-item">YAHOO: <span class="status-led" id="led-yahoo" data-status="idle"></span><span id="status-yahoo">idle</span></span>
+    <span class="status-item">PROXY: <span id="status-proxy">corsproxy.io</span></span>
+    <span class="status-item">last_refresh: <span id="status-last">--:--:--</span></span>
+    <span class="status-item">interval:
+      <input type="range" id="refresh-slider" min="5" max="60" step="5" value="10">
+      <span id="refresh-display">10s</span>
+    </span>
+    <span class="status-item"><button id="btn-refresh" class="btn-icon" title="手動刷新">⟳</button></span>
+    <span class="status-item"><button id="btn-sound" class="btn-icon" title="音效">🔊</button></span>
+    <span class="status-spacer"></span>
+    <span class="status-item disclaim">資料僅供參考,非投資建議 · 報價有延遲</span>
+  </footer>
+
+</div><!-- /.app -->
+
+<!-- ============ MODALS ============ -->
+<dialog id="modal-add-holding" class="modal">
+  <form method="dialog" class="modal-form">
+    <h3>新增買入紀錄</h3>
+    <label>股票代號 <input type="text" name="symbol" required placeholder="例: 2330" pattern="[0-9A-Za-z]+" maxlength="6"></label>
+    <label>股數 <input type="number" name="qty" required min="1" placeholder="例: 1000"></label>
+    <label>買入價 <input type="number" name="price" required min="0.01" step="0.01" placeholder="例: 580.00"></label>
+    <label>買入日期 <input type="date" name="date"></label>
+    <label>手續費率 (%)<input type="number" name="feeRate" value="0.1425" step="0.0001" min="0"></label>
+    <label>融資成數 (%) <input type="number" name="marginRatio" value="0" min="0" max="60" step="1"> <small>0 = 現股,60 = 一般融資上限</small></label>
+    <div class="modal-actions">
+      <button type="button" data-close>取消</button>
+      <button type="submit" class="primary" value="ok">新增</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="modal-add-watch" class="modal">
+  <form method="dialog" class="modal-form">
+    <h3>加入自選</h3>
+    <label>股票代號 <input type="text" name="symbol" required placeholder="例: 2454" pattern="[0-9A-Za-z]+" maxlength="6"></label>
+    <div class="modal-actions">
+      <button type="button" data-close>取消</button>
+      <button type="submit" class="primary" value="ok">加入</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="modal-ai-keys" class="modal">
+  <form method="dialog" class="modal-form">
+    <h3>設定 / API Keys</h3>
+    <p class="modal-note">API Keys / 設定都存在本機 localStorage,僅供個人本機工具使用。請勿在公用電腦保存。</p>
+
+    <fieldset>
+      <legend>CORS Proxy (選填,推薦自架 CF Worker)</legend>
+      <label>自訂 Proxy URL
+        <input type="url" name="customProxyUrl" placeholder="https://stock-proxy.你的帳號.workers.dev">
+        <small>留空則用公共 corsproxy.io / codetabs / allorigins (容易被 rate limit)。<br>
+        建議自架 Cloudflare Worker (參考根目錄的 <code>cloudflare-worker.js</code>),每天 10 萬次免費。</small>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>AI Provider Keys</legend>
+    <label>Claude (Anthropic) API Key
+      <input type="password" name="claudeKey" placeholder="sk-ant-...">
+    </label>
+    <label>Claude 模型
+      <select name="claudeModel">
+        <option value="claude-opus-4-7">claude-opus-4-7 (最強)</option>
+        <option value="claude-sonnet-4-6">claude-sonnet-4-6 (平衡)</option>
+        <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (快速)</option>
+      </select>
+    </label>
+    <label>OpenAI API Key
+      <input type="password" name="openaiKey" placeholder="sk-...">
+    </label>
+    <label>OpenAI 模型
+      <select name="openaiModel">
+        <option value="gpt-4o">gpt-4o</option>
+        <option value="gpt-4o-mini">gpt-4o-mini (便宜)</option>
+        <option value="gpt-4o-search-preview">gpt-4o-search-preview (內建網路搜尋)</option>
+        <option value="gpt-4-turbo">gpt-4-turbo</option>
+        <option value="o1-mini">o1-mini</option>
+      </select>
+    </label>
+    <label>Gemini (Google) API Key
+      <input type="password" name="geminiKey" placeholder="AIza...">
+      <small>到 <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a> 取得免費 key</small>
+    </label>
+    <label>Gemini 模型
+      <select name="geminiModel">
+        <option value="gemini-2.5-flash">gemini-2.5-flash (推薦 / 平衡)</option>
+        <option value="gemini-2.5-pro">gemini-2.5-pro (最強推理)</option>
+        <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (省錢快速)</option>
+        <option value="gemini-flash-latest">gemini-flash-latest (自動跟最新版)</option>
+        <option value="gemini-pro-latest">gemini-pro-latest (自動跟最新版)</option>
+      </select>
+    </label>
+    </fieldset>
+    <div class="modal-actions">
+      <button type="button" data-close>取消</button>
+      <button type="submit" class="primary" value="ok">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="modal-margin" class="modal">
+  <form method="dialog" class="modal-form">
+    <h3>融資 / 質押 設定</h3>
+    <fieldset>
+      <legend>融資</legend>
+      <label>融資餘額 (NT$) <input type="number" name="marginBalance" min="0" step="1" placeholder="500000"></label>
+      <label>年利率 (%) <input type="number" name="marginRate" min="0" max="20" step="0.01" value="6.5"></label>
+      <label>維持率警戒線 (%) <input type="number" name="warnRatio" min="100" max="200" step="1" value="130"></label>
+    </fieldset>
+    <fieldset>
+      <legend>質押</legend>
+      <label>質押金額 (NT$) <input type="number" name="pledgeAmount" min="0" step="1" placeholder="0"></label>
+      <label>質押率上限 (%) <input type="number" name="pledgeLimit" min="0" max="100" step="1" value="60"></label>
+    </fieldset>
+    <div class="modal-actions">
+      <button type="button" data-close>取消</button>
+      <button type="submit" class="primary" value="ok">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="modal-edit-holding" class="modal">
+  <div class="modal-form">
+    <h3>編輯持股紀錄</h3>
+    <div id="edit-holding-list" class="edit-list"></div>
+    <div class="modal-actions">
+      <button type="button" data-close class="primary">關閉</button>
+    </div>
+  </div>
+</dialog>
+
+<script type="module" src="js/main_r2.js"></script>
+</body>
+</html>
