@@ -167,7 +167,15 @@ async function refresh() {
     for (const code of codes) {
       const tse = map.get(`tse_${code}.tw`);
       const otc = map.get(`otc_${code}.tw`);
-      const q = (tse && tse.price != null) ? tse : (otc && otc.price != null ? otc : null);
+      // 優先 live price；其次 otc live；再次 prev close (盤後備用)
+      let q = (tse?.price != null) ? tse : (otc?.price != null ? otc : null);
+      if (!q) {
+        // 盤後: z='-' 但 y(昨收) 仍有效 → 用昨收作為參考價格
+        const fallback = (tse?.prev != null) ? tse : (otc?.prev != null ? otc : null);
+        if (fallback) {
+          q = { ...fallback, price: fallback.prev, _prevClose: true };
+        }
+      }
       if (q) {
         state.quoteByCode.set(code, q);
         if (q.name) state.nameByCode.set(code, q.name);
@@ -351,7 +359,11 @@ function renderAll() {
 
   // Portfolio
   const positions = aggregate();
-  const positionsWithQuotes = withQuotes(positions, sym => state.quoteByCode.get(sym)?.price ?? null);
+  const positionsWithQuotes = withQuotes(
+    positions,
+    sym => state.quoteByCode.get(sym)?.price ?? null,
+    sym => state.quoteByCode.get(sym)?._prevClose || false,
+  );
   const t = totals(positionsWithQuotes);
   renderHoldings(positionsWithQuotes, t, code => state.nameByCode.get(code));
 
@@ -1087,8 +1099,24 @@ function init() {
   // 從 localStorage 還原 K 線 cache, 首次 render 就有資料可畫
   const hydrated = hydrateKlineCache();
   if (hydrated > 0) console.log(`[kline] hydrated ${hydrated} symbols from cache`);
+
+  // 還原上次 session 的報價快取 → quoteByCode / nameByCode
+  // 讓持股/自選股在第一次 render 就能顯示昨日收盤，不用等 TWSE API 回來
+  try {
+    const lq = load(KEYS.LAST_QUOTE) || {};
+    let restored = 0;
+    for (const [code, q] of Object.entries(lq)) {
+      if (q && q.price != null && !['TWII','TX','^GSPC','^IXIC','^DJI','ES=F','NQ=F','YM=F'].includes(code)) {
+        state.quoteByCode.set(code, { ...q, _cached: true });
+        if (q.name) state.nameByCode.set(code, q.name);
+        restored++;
+      }
+    }
+    if (restored > 0) console.log(`[lastquote] restored ${restored} quotes from cache`);
+  } catch (e) { console.warn('[lastquote] restore failed', e); }
+
   startClockTick();
-  renderAll();        // 用 cached K 線立刻畫出畫面
+  renderAll();        // 用 cached K 線 + cached 報價立刻畫出畫面
   startRefreshLoop();
   fetchAllWatchKlines();   // 背景更新 (fresh 的會自動跳過)
   // 每 5 分鐘檢查一次 (日 K 一天才更新一次,5 分夠用)

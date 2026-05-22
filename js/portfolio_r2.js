@@ -79,9 +79,10 @@ export function aggregate(holdings = listHoldings()) {
  * quotes: Map<symbol, {price}>  (symbol 已正規化,例 '2330' 或 'tse_2330.tw' 的最後一段)
  * 回傳 [{symbol, qty, avgPrice, currentPrice, marketValue, pnl, pnlPct, ...}]
  */
-export function withQuotes(positions, quoteLookup) {
+export function withQuotes(positions, quoteLookup, flagLookup = () => false) {
   return positions.map(p => {
     const currentPrice = quoteLookup(p.symbol);
+    const _prevClose = !!flagLookup(p.symbol);   // true = 盤後昨收備用, false = 即時
     const marketValue = currentPrice != null ? p.qty * currentPrice : null;
     const pnl = marketValue != null ? marketValue - p.totalCost - p.totalMarginUsed : null;
     // 損益% 用「自備款 (equity cost)」基準 — 含融資槓桿放大效果
@@ -89,6 +90,7 @@ export function withQuotes(positions, quoteLookup) {
     return {
       ...p,
       currentPrice,
+      _prevClose,
       marketValue,
       pnl,
       pnlPct,

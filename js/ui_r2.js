@@ -252,7 +252,11 @@ export function renderHoldings(rows, totalsObj, nameLookup) {
         <td>${name}</td>
         <td class="num">${r.qty.toLocaleString()}</td>
         <td class="num">${fmtNum(r.avgPrice)}</td>
-        <td class="num">${r.currentPrice != null ? fmtNum(r.currentPrice) : '<span style="color:var(--text-dim)">--</span>'}</td>
+        <td class="num">${r.currentPrice != null
+          ? (r._prevClose
+              ? `<span title="昨收參考價 (盤後)">${fmtNum(r.currentPrice)}<sup style="color:var(--text-dim);font-size:0.65em;margin-left:3px">昨</sup></span>`
+              : fmtNum(r.currentPrice))
+          : '<span style="color:var(--text-dim)">--</span>'}</td>
         <td class="num">${r.marketValue != null ? fmtInt(r.marketValue) : '--'}</td>
         <td class="num ${dir}">${r.pnl != null ? (r.pnl >= 0 ? '+' : '') + fmtInt(r.pnl) : '--'}</td>
         <td class="num ${dir}">${r.pnlPct != null ? fmtPct(r.pnlPct) : '--'}</td>
