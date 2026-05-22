@@ -130,6 +130,125 @@ export function downloadCsv() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// ============ CSV IMPORT ============
+
+/**
+ * Parse a CSV text into rows.
+ * Returns { headers: string[], rows: string[][] }
+ */
+export function parseCsvText(text) {
+  // Normalise line endings
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const nonEmpty = lines.filter(l => l.trim());
+  if (!nonEmpty.length) return { headers: [], rows: [] };
+
+  const splitLine = (line) => {
+    const result = [];
+    let cur = '';
+    let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else { inQ = !inQ; }
+      } else if (ch === ',' && !inQ) {
+        result.push(cur.trim());
+        cur = '';
+      } else {
+        cur += ch;
+      }
+    }
+    result.push(cur.trim());
+    return result;
+  };
+
+  // Strip BOM
+  const headerLine = nonEmpty[0].replace(/^﻿/, '');
+  const headers = splitLine(headerLine);
+  const rows = nonEmpty.slice(1).map(splitLine);
+  return { headers, rows };
+}
+
+/**
+ * Auto-detect column mapping from headers.
+ * Returns { symbol, qty, price, date, feeRate, marginRatio } — each value is a column index (or -1)
+ */
+export function detectColumns(headers) {
+  const norm = headers.map(h => h.toLowerCase().replace(/[\s_\-]/g, ''));
+  const find = (...keys) => {
+    for (const k of keys) {
+      const idx = norm.findIndex(h => h.includes(k));
+      if (idx >= 0) return idx;
+    }
+    return -1;
+  };
+  return {
+    symbol:      find('代號','symbol','股票','ticker','code','股票代號'),
+    qty:         find('股數','qty','quantity','shares','數量','成交股數','volume'),
+    price:       find('買入價','price','均價','成交價','avgprice','buyprice','單價'),
+    date:        find('買入日期','date','成交日','交易日','日期','tradedate'),
+    feeRate:     find('手續費率','feerate','fee'),
+    marginRatio: find('融資成數','marginratio','margin'),
+  };
+}
+
+/**
+ * Convert a mapped row into a holding object.
+ * colMap: { symbol, qty, price, date, feeRate, marginRatio } — column indices
+ * rawRow: string[]
+ * Returns { ok, data, error }
+ */
+export function rowToHolding(rawRow, colMap) {
+  const g = (idx) => idx >= 0 ? (rawRow[idx] || '').replace(/,/g, '').trim() : '';
+
+  const symbolRaw = g(colMap.symbol);
+  const qtyRaw    = g(colMap.qty);
+  const priceRaw  = g(colMap.price);
+
+  if (!symbolRaw) return { ok: false, error: '缺代號' };
+  if (!qtyRaw || isNaN(Number(qtyRaw))) return { ok: false, error: '股數無效' };
+  if (!priceRaw || isNaN(Number(priceRaw))) return { ok: false, error: '價格無效' };
+
+  const qty   = Number(qtyRaw);
+  const price = Number(priceRaw);
+  if (qty <= 0 || price <= 0) return { ok: false, error: '股數/價格必須 > 0' };
+
+  let date = g(colMap.date);
+  // Try to normalise date formats: 20250101 / 2025/01/01 / 2025-01-01
+  if (date) {
+    if (/^\d{8}$/.test(date)) {
+      date = date.slice(0,4) + '-' + date.slice(4,6) + '-' + date.slice(6,8);
+    } else {
+      date = date.replace(/\//g, '-');
+    }
+    // Validate
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) date = '';
+  }
+
+  const feeRateRaw    = g(colMap.feeRate);
+  const marginRatioRaw = g(colMap.marginRatio);
+
+  return {
+    ok: true,
+    data: {
+      symbol:      symbolRaw.toUpperCase(),
+      qty,
+      price,
+      date:        date || new Date().toISOString().slice(0, 10),
+      feeRate:     feeRateRaw ? Number(feeRateRaw) : 0.1425,
+      marginRatio: marginRatioRaw ? Number(marginRatioRaw) : 0,
+    }
+  };
+}
+
+/**
+ * Batch-import an array of valid holding objects.
+ * Appends to existing holdings. Returns array of added records.
+ */
+export function importHoldings(validRows) {
+  return validRows.map(row => addHolding(row));
+}
+
 // 自選股
 export function listWatchlist() {
   return load(KEYS.WATCHLIST) || [];

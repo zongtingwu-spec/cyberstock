@@ -10,6 +10,7 @@ import {
   aggregate, withQuotes, totals,
   listWatchlist, addToWatchlist, removeFromWatchlist,
   downloadCsv,
+  parseCsvText, detectColumns, rowToHolding, importHoldings,
 } from './portfolio_r2.js';
 import {
   getMarginSettings, setMarginSettings,
@@ -603,6 +604,145 @@ function setupEvents() {
     dlg.showModal();
   });
   document.getElementById('btn-export-csv').addEventListener('click', () => downloadCsv());
+
+  // ── CSV import ──────────────────────────────────────────────
+  const csvFileInput = document.getElementById('csv-file-input');
+  const csvModal     = document.getElementById('modal-csv-import');
+  const csvHint      = document.getElementById('csv-import-hint');
+  const csvWarn      = document.getElementById('csv-import-warn');
+  const csvCount     = document.getElementById('csv-import-count');
+  const csvColMap    = document.getElementById('csv-col-map');
+  const csvColGrid   = document.getElementById('csv-col-grid');
+  const csvPreviewHead = document.getElementById('csv-preview-head');
+  const csvPreviewBody = document.getElementById('csv-preview-body');
+
+  let _csvParsed   = null;   // { headers, rows }
+  let _csvColMap   = null;   // { symbol, qty, price, date, feeRate, marginRatio }
+  let _csvValidRows = [];    // validated holding objects ready for import
+
+  document.getElementById('btn-import-csv').addEventListener('click', () => {
+    csvFileInput.value = '';
+    csvFileInput.click();
+  });
+
+  csvFileInput.addEventListener('change', async () => {
+    const file = csvFileInput.files[0];
+    if (!file) return;
+    const text = await file.text();
+    openCsvImportModal(text);
+  });
+
+  function openCsvImportModal(text) {
+    const parsed = parseCsvText(text);
+    _csvParsed = parsed;
+
+    if (!parsed.headers.length) {
+      alert('無法解析 CSV — 請確認檔案格式');
+      return;
+    }
+
+    const autoMap = detectColumns(parsed.headers);
+    _csvColMap = { ...autoMap };
+
+    // Show/hide column mapping UI only when some fields not detected
+    const missing = ['symbol','qty','price'].filter(k => autoMap[k] < 0);
+    if (missing.length > 0) {
+      csvColMap.hidden = false;
+      buildColMapUI(parsed.headers, autoMap);
+    } else {
+      csvColMap.hidden = true;
+    }
+
+    refreshCsvPreview();
+    csvModal.showModal();
+  }
+
+  function buildColMapUI(headers, autoMap) {
+    const fields = [
+      { key: 'symbol',      label: '代號 *' },
+      { key: 'qty',         label: '股數 *' },
+      { key: 'price',       label: '買入價 *' },
+      { key: 'date',        label: '日期' },
+      { key: 'feeRate',     label: '手續費率%' },
+      { key: 'marginRatio', label: '融資成數%' },
+    ];
+    csvColGrid.innerHTML = fields.map(f => {
+      const opts = ['<option value="-1">— 略過 —</option>',
+        ...headers.map((h, i) => `<option value="${i}" ${autoMap[f.key] === i ? 'selected' : ''}>${h}</option>`)
+      ].join('');
+      return `<label>${f.label}<select data-field="${f.key}">${opts}</select></label>`;
+    }).join('');
+
+    csvColGrid.querySelectorAll('select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        _csvColMap[sel.dataset.field] = Number(sel.value);
+        refreshCsvPreview();
+      });
+    });
+  }
+
+  function refreshCsvPreview() {
+    if (!_csvParsed) return;
+    const { headers, rows } = _csvParsed;
+
+    // Table header
+    csvPreviewHead.innerHTML = '<th>#</th><th>狀態</th>' +
+      headers.map(h => `<th>${h}</th>`).join('') +
+      '<th>代號</th><th>股數</th><th>均價</th><th>日期</th>';
+
+    // Validate rows
+    _csvValidRows = [];
+    const maxRows = 200;
+    const previewHtml = rows.slice(0, maxRows).map((row, i) => {
+      const res = rowToHolding(row, _csvColMap);
+      const rowClass = res.ok ? 'csv-ok' : 'csv-skip';
+      if (res.ok) _csvValidRows.push(res.data);
+      const cells = row.map(c => `<td>${c}</td>`).join('');
+      const extra = res.ok
+        ? `<td>${res.data.symbol}</td><td>${res.data.qty}</td><td>${res.data.price}</td><td>${res.data.date}</td>`
+        : `<td colspan="4" style="color:var(--up-red)">${res.error}</td>`;
+      return `<tr class="${rowClass}"><td>${i+1}</td><td>${res.ok ? '✓' : '✗'}</td>${cells}${extra}</tr>`;
+    }).join('');
+
+    csvPreviewBody.innerHTML = previewHtml;
+    csvCount.textContent = _csvValidRows.length;
+
+    if (rows.length > maxRows) {
+      csvWarn.textContent = `⚠ 只預覽前 ${maxRows} 行，檔案共 ${rows.length} 行，全部將被匯入。`;
+      csvWarn.hidden = false;
+    } else {
+      csvWarn.hidden = true;
+    }
+
+    const hint = `共 ${rows.length} 行，可匯入 ${_csvValidRows.length} 筆，跳過 ${rows.length - _csvValidRows.length} 筆無效行。`;
+    csvHint.textContent = hint;
+  }
+
+  document.getElementById('btn-csv-cancel').addEventListener('click', () => {
+    csvModal.close();
+  });
+
+  document.getElementById('btn-csv-confirm').addEventListener('click', () => {
+    if (!_csvValidRows.length) { alert('沒有可匯入的資料'); return; }
+    // Re-validate all rows (including beyond preview limit)
+    let allValid = _csvValidRows;
+    if (_csvParsed.rows.length > 200) {
+      allValid = _csvParsed.rows
+        .map(r => rowToHolding(r, _csvColMap))
+        .filter(r => r.ok)
+        .map(r => r.data);
+    }
+    importHoldings(allValid);
+    csvModal.close();
+    audio.blip();
+    refresh();
+    fetchAllWatchKlines();
+    // status notification
+    const msg = `✅ 已匯入 ${allValid.length} 筆持股紀錄`;
+    csvHint.textContent = msg;
+    console.info('[csv-import]', msg, allValid);
+  });
+  // ── end CSV import ──────────────────────────────────────────
 
   document.getElementById('modal-add-holding').addEventListener('close', (e) => {
     const form = e.target.querySelector('form');

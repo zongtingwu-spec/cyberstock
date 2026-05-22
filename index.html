@@ -429,7 +429,9 @@
         <span class="panel-title">持股 / 成本管理</span>
         <span class="panel-actions">
           <button id="btn-add-holding" class="btn-mini">+ 新增買入</button>
+          <button id="btn-import-csv" class="btn-mini">📂 匯入 CSV</button>
           <button id="btn-export-csv" class="btn-mini">匯出 CSV</button>
+          <input type="file" id="csv-file-input" accept=".csv,text/csv" style="display:none">
         </span>
       </header>
       <div class="panel-body">
@@ -620,6 +622,28 @@
 </div><!-- /.app -->
 
 <!-- ============ MODALS ============ -->
+<dialog id="modal-csv-import" class="modal modal-wide">
+  <div class="modal-form">
+    <h3>📂 匯入 CSV — 預覽確認</h3>
+    <p class="modal-note" id="csv-import-hint"></p>
+    <div id="csv-col-map" class="csv-col-map" hidden>
+      <h4 style="margin:0 0 8px;color:var(--neon-cyan)">欄位對應設定</h4>
+      <div class="csv-col-grid" id="csv-col-grid"></div>
+    </div>
+    <div class="csv-preview-wrap">
+      <table class="csv-preview-table" id="csv-preview-table">
+        <thead><tr id="csv-preview-head"></tr></thead>
+        <tbody id="csv-preview-body"></tbody>
+      </table>
+    </div>
+    <p class="modal-note" style="color:var(--neon-yellow)" id="csv-import-warn" hidden></p>
+    <div class="modal-actions">
+      <button type="button" id="btn-csv-cancel">取消</button>
+      <button type="button" id="btn-csv-confirm" class="primary">確認匯入 (<span id="csv-import-count">0</span> 筆)</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="modal-add-holding" class="modal">
   <form method="dialog" class="modal-form">
     <h3>新增買入紀錄</h3>
